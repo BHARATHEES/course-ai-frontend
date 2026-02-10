@@ -3,6 +3,8 @@ import { Container, Paper, TextField, Button, Typography, Divider, Box, Alert, S
 import { useNavigate } from "react-router-dom";
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
+console.log("API URL:", process.env.REACT_APP_API_URL);
+
 export default function Login({ onLogin }) {
   const navigate = useNavigate();
   

@@ -1,21 +1,29 @@
 import { CardContent, Typography, Box, Paper, Divider, List, ListItem, ListItemText, Chip, Stack } from "@mui/material";
 
 export default function AnalysisResult({ data, courseName }) {
-  // 1. Safety check: ensure data exists
-  if (!data) return null;
+  // 1. Safety check: ensure data and the analysis property exist
+  if (!data || !data.analysis) return null;
 
-  // 2. Extract the parts from your JSON prompt structure
   const { analysis, suggestions, isValid } = data;
 
+  // 2. Handle Invalid Courses
   if (isValid === false) {
     return (
-      <Typography color="error" sx={{ p: 4 }}>
-        This doesn't seem like a valid course. Try these instead: {suggestions?.join(", ")}
-      </Typography>
+      <Paper elevation={4} sx={{ mt: 4, p: 4, borderRadius: 3, textAlign: 'center' }}>
+        <Typography color="error" variant="h6" gutterBottom>
+          This doesn't seem like a valid course.
+        </Typography>
+        <Typography variant="body1">Try searching for these related topics:</Typography>
+        <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 2 }}>
+          {suggestions?.map((s, i) => (
+            <Chip key={i} label={s} variant="outlined" />
+          ))}
+        </Stack>
+      </Paper>
     );
   }
 
-  // 3. Function to turn "### Section" into a styled header and remove "**"
+  // 3. Helper function to format the AI string into styled sections
   const formatText = (text) => {
     if (!text) return "";
     return text.split('\n').map((line, index) => {
@@ -28,12 +36,13 @@ export default function AnalysisResult({ data, courseName }) {
       }
       return (
         <Typography key={index} variant="body1" sx={{ mb: 1.5, color: '#334155', lineHeight: 1.7 }}>
-          {line.replace(/\*\*/g, '')} {/* Removes the bold asterisks */}
+          {line.replace(/\*\*/g, '')}
         </Typography>
       );
     });
   };
 
+  // 4. Final Render
   return (
     <Paper elevation={4} sx={{ mt: 4, borderRadius: 3, overflow: "hidden" }}>
       <Box sx={{ bgcolor: "primary.main", color: "white", p: 3 }}>
@@ -47,7 +56,7 @@ export default function AnalysisResult({ data, courseName }) {
         {formatText(analysis)}
 
         {/* Render Suggestions as interactive Chips */}
-        {suggestions && (
+        {suggestions && suggestions.length > 0 && (
           <Box sx={{ mt: 4, p: 3, bgcolor: '#f8fafc', borderRadius: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#475569' }}>
               Recommended Related Topics:

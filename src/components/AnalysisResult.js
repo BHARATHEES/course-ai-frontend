@@ -10,12 +10,19 @@ export default function AnalysisResult({ data, courseName }) {
     try {
       parsedData = JSON.parse(data);
     } catch (e) {
-      console.error("Failed to parse data:", e);
-      return null;
+      parsedData = {
+        analysis: data,
+        isValid: true,
+        suggestions: []
+      };
     }
   }
+  else 
+  {
+    parsedData = data;
+  }
 
-  const { analysis, suggestions, isValid } = parsedData;
+  const { analysis = "", suggestions = [], isValid = true } = parsedData;
 
   // 3. Handle invalid courses
   if (isValid === false) {

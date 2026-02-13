@@ -23,21 +23,21 @@ export default function CourseForm({ user }) {
       // 1. Get the Analysis from API
       const res = await api.analyzeCourse(targetCourse);
 
-      if (res.isValid) {
-        setResult(res.analysis);
-      } else {
+      // ✅ FIX: Set the WHOLE response object so AnalysisResult can read all properties
+      setResult(res); 
+
+      if (!res.isValid) {
         setSuggestions(res.suggestions || []);
-        setResult("");
       }
 
       // 2. SAVE TO HISTORY DATABASE
-      // Fallback: If 'user' prop isn't ready, check localStorage
       const storedUser = JSON.parse(localStorage.getItem("user"));
       const userId = user?._id || storedUser?._id;
 
-      if (userId && targetCourse.trim() !== "") {
+      // Only save to history if user is logged in AND the course is valid
+      if (userId && res.isValid) {
         try {
-          const historyRes = await fetch(`${process.env.REACT_APP_API_URL}/api/history`, {
+          await fetch(`${process.env.REACT_APP_API_URL}/api/history`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -45,17 +45,10 @@ export default function CourseForm({ user }) {
               searchQuery: targetCourse
             }),
           });
-
-          if (historyRes.ok) {
-            console.log("✅ History saved for:", targetCourse);
-          } else {
-            console.error("❌ History save failed. Status:", historyRes.status);
-          }
+          console.log("✅ History saved");
         } catch (historyErr) {
-          console.error("❌ Network error saving history:", historyErr);
+          console.error("❌ History save failed:", historyErr);
         }
-      } else {
-        console.warn("⚠️ History not saved: User ID missing. Ensure you are logged in.");
       }
 
     } catch (err) {

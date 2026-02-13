@@ -26,25 +26,7 @@ export default function AnalysisResult({ data, courseName }) {
 
   // 3. Handle invalid courses
   if (isValid === false) {
-    return (
-      <Paper elevation={4} sx={{ mt: 4, borderRadius: 3, overflow: "hidden" }}>
-        <Box sx={{ bgcolor: "#f87171", color: "white", p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: '700' }}>
-            Course Not Found
-          </Typography>
-        </Box>
-        <CardContent sx={{ p: 4 }}>
-          <Typography variant="body1" sx={{ mb: 2, color: '#334155' }}>
-            This doesn't seem like a valid course. Try these suggestions instead:
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {suggestions && suggestions.map((s, i) => (
-              <Chip key={i} label={s} sx={{ mb: 1, bgcolor: '#fecaca', fontWeight: 500 }} />
-            ))}
-          </Stack>
-        </CardContent>
-      </Paper>
-    );
+    return null;
   }
 
   // 4. Function to parse and format the analysis text
@@ -133,49 +115,6 @@ export default function AnalysisResult({ data, courseName }) {
         <Box sx={{ mb: 4 }}>
           {formatText(analysis)}
         </Box>
-
-        {/* Suggestions Section */}
-        {suggestions && suggestions.length > 0 && (
-          <Box sx={{ 
-            mt: 4, 
-            p: 3, 
-            bgcolor: '#f0f9ff', 
-            borderRadius: 2,
-            borderLeft: '4px solid #3b82f6'
-          }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                fontWeight: 700, 
-                mb: 2, 
-                color: '#1e40af',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              💡 Recommended Related Topics:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {suggestions.map((suggestion, i) => (
-                <Chip 
-                  key={i} 
-                  label={suggestion}
-                  sx={{ 
-                    mb: 1, 
-                    bgcolor: '#dbeafe', 
-                    color: '#1e40af',
-                    fontWeight: 500,
-                    border: '1px solid #bfdbfe',
-                    '&:hover': {
-                      bgcolor: '#bfdbfe'
-                    }
-                  }} 
-                />
-              ))}
-            </Stack>
-          </Box>
-        )}
       </CardContent>
     </Paper>
   );

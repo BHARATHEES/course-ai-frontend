@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextField, Button, Card, CardContent, Typography, CircularProgress, Box, List, ListItem, ListItemButton, ListItemText, Alert, Stack } from "@mui/material";
+import { TextField, Button, Card, CardContent, Typography, CircularProgress,Chip, Box, Alert, Stack } from "@mui/material";
 import api from "../services/api";
 import AnalysisResult from "./AnalysisResult";
 
@@ -116,21 +116,44 @@ export default function CourseForm({ user }) {
           </Stack>
 
           {suggestions.length > 0 && (
-            <Box sx={{ mt: 3 }}>
-              <Alert severity="warning">
-                Course not clearly recognized. Did you mean one of these?
-              </Alert>
-              <List sx={{ mt: 1, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid #ddd' }}>
-                {suggestions.map((item, index) => (
-                  <ListItem disablePadding key={index} divider={index !== suggestions.length - 1}>
-                    <ListItemButton onClick={() => handleSelectSuggestion(item)}>
-                      <ListItemText primary={item} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
+  <Box sx={{ mt: 3 }}>
+    <Alert 
+      severity="warning" 
+      sx={{ borderRadius: 2, fontWeight: 500, mb: 2 }}
+    >
+      Course not clearly recognized. Did you mean one of these?
+    </Alert>
+    
+    <Stack 
+      direction="row" 
+      spacing={1} 
+      flexWrap="wrap" 
+      useFlexGap 
+      sx={{ p: 1 }}
+    >
+      {suggestions.map((item, index) => (
+        <Chip 
+          key={index} 
+          label={item}
+          onClick={() => handleSelectSuggestion(item)} // This makes it interactive
+          sx={{ 
+            mb: 1, 
+            bgcolor: '#fff7ed', // Light orange/warning theme
+            color: '#9a3412',
+            fontWeight: 600,
+            border: '1px solid #fed7aa',
+            cursor: 'pointer',
+            '&:hover': {
+              bgcolor: '#ffedd5',
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s'
+            }
+          }} 
+        />
+      ))}
+    </Stack>
+  </Box>
+)}
         </CardContent>
       </Card>
 

@@ -1,4 +1,4 @@
-import { CardContent, Typography, Box, Paper, Chip, Stack } from "@mui/material";
+import { CardContent, Typography, Box, Paper } from "@mui/material";
 
 export default function AnalysisResult({ data, courseName }) {
   // 1. Safety check: ensure data exists
@@ -12,20 +12,16 @@ export default function AnalysisResult({ data, courseName }) {
     } catch (e) {
       parsedData = {
         analysis: data,
-        isValid: true,
-        suggestions: []
+        isValid: true
       };
     }
   }
-  else 
-  {
-    parsedData = data;
-  }
 
-  const { analysis = "", suggestions = [], isValid = true } = parsedData;
+  // 🟢 CLEANED: Removed 'suggestions' and 'isValid' destructuring to avoid build errors
+  const { analysis = "" } = parsedData;
 
-  // 3. Handle invalid courses
-  if (isValid === false) {
+  // 3. Handle invalid courses - If the parent logic already shows chips, we stay hidden
+  if (parsedData.isValid === false) {
     return null;
   }
 
@@ -33,7 +29,6 @@ export default function AnalysisResult({ data, courseName }) {
   const formatText = (text) => {
     if (!text) return "";
     
-    // Handle both actual newlines and escaped \n characters
     const lines = text
       .replace(/\\n/g, '\n')
       .split('\n')
@@ -111,7 +106,6 @@ export default function AnalysisResult({ data, courseName }) {
 
       {/* Content */}
       <CardContent sx={{ p: 4, bgcolor: '#ffffff' }}>
-        {/* Analysis Section */}
         <Box sx={{ mb: 4 }}>
           {formatText(analysis)}
         </Box>

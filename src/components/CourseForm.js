@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextField, Button, Card, CardContent, Typography, CircularProgress,Chip, Box, Alert, Stack } from "@mui/material";
+import { TextField, Button, Card, CardContent, Typography, CircularProgress, Chip, Box, Alert, Stack } from "@mui/material";
 import api from "../services/api";
 import AnalysisResult from "./AnalysisResult";
 
@@ -21,9 +21,9 @@ export default function CourseForm({ user }) {
 
     try {
       const res = await api.analyzeCourse(targetCourse);
-      
+
       // ✅ Set the whole result
-      setResult(res); 
+      setResult(res);
 
       // ✅ Update the state suggestions if the course isn't valid
       if (!res.isValid) {
@@ -115,47 +115,45 @@ export default function CourseForm({ user }) {
           </Stack>
 
           {suggestions.length > 0 && (
-  <Box sx={{ mt: 3 }}>
-    <Alert 
-      severity="warning" 
-      sx={{ borderRadius: 2, fontWeight: 500, mb: 2 }}
-    >
-      Course not clearly recognized. Did you mean one of these?
-    </Alert>
-    
-    <Stack 
-      direction="row" 
-      spacing={1} 
-      flexWrap="wrap" 
-      useFlexGap 
-      sx={{ p: 1 }}
-    >
-      {suggestions.length > 0 && !result.isValid && ( 
-  <Box sx={{ mt: 3 }}>
-        <Chip 
-          key={index} 
-          label={item}
-          onClick={() => handleSelectSuggestion(item)} // This makes it interactive
-          sx={{ 
-            mb: 1, 
-            bgcolor: '#fff7ed', // Light orange/warning theme
-            color: '#9a3412',
-            fontWeight: 600,
-            border: '1px solid #fed7aa',
-            cursor: 'pointer',
-            '&:hover': {
-              bgcolor: '#ffedd5',
-              transform: 'translateY(-2px)',
-              transition: 'all 0.2s'
-            }
-          }} 
-        />
-      </Box>
-)}
-      
-    </Stack>
-  </Box>
-)}
+            <Box sx={{ mt: 3 }}>
+              <Alert
+                severity="warning"
+                sx={{ borderRadius: 2, fontWeight: 500, mb: 2 }}
+              >
+                Course not clearly recognized. Did you mean one of these?
+              </Alert>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                useFlexGap
+                sx={{ p: 1 }}
+              >
+                {/* 🟢 FIX: Ensure (item, index) are inside the map arguments */}
+                {suggestions.map((item, index) => (
+                  <Chip
+                    key={index}
+                    label={item}
+                    onClick={() => handleSelectSuggestion(item)}
+                    sx={{
+                      mb: 1,
+                      bgcolor: '#fff7ed',
+                      color: '#9a3412',
+                      fontWeight: 600,
+                      border: '1px solid #fed7aa',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#ffedd5',
+                        transform: 'translateY(-2px)',
+                        transition: 'all 0.2s'
+                      }
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          )}
         </CardContent>
       </Card>
 

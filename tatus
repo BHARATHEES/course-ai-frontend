@@ -1,0 +1,27 @@
+[33mcommit 0665e5fdc591ccd09d6d3d40f200327750eb0fa3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Bharathees K <bharathees16@gamil.com>
+Date:   Fri Feb 13 16:14:00 2026 +0530
+
+    Fix: updated course validation, improved parsing in AnalysisResult, and suggestion handling
+
+[1mdiff --git a/public/Cisco_Python_Essentials_1.pdf b/public/Cisco_Python_Essentials_1.pdf[m
+[1mdeleted file mode 100644[m
+[1mindex 756f19e..0000000[m
+[1m--- a/public/Cisco_Python_Essentials_1.pdf[m
+[1m+++ /dev/null[m
+[36m@@ -1,15 +0,0 @@[m
+[31m-              This certificate is awarded to[m
+[31m-[m
+[31m-     BHARATHEES K[m
+[31m-[m
+[31m-               for successfully completing[m
+[31m-[m
+[31m-         Python Essentials 1[m
+[31m-[m
+[31m-offered by Bannari Amman Institute of Technology[m
+[31m-through the Cisco Networking Academy program.[m
+[31m-[m
+[31m-Naveena S                                              13 Feb 2026[m
+[31m-Instructor                                        Completion Date[m
+[31m-Bannari Amman Institute of Technology[m
+[31m-[m

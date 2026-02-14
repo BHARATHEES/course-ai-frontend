@@ -16,25 +16,25 @@ export default function CourseForm({ user }) {
 
     setLoading(true);
     setResult("");
-    setSuggestions([]);
+    setSuggestions([]); // Clear previous suggestions
     setSubmittedCourse(targetCourse);
 
     try {
-      // 1. Get the Analysis from API
       const res = await api.analyzeCourse(targetCourse);
-
-      // ✅ FIX: Set the WHOLE response object so AnalysisResult can read all properties
+      
+      // ✅ Set the whole result
       setResult(res); 
 
+      // ✅ Update the state suggestions if the course isn't valid
       if (!res.isValid) {
         setSuggestions(res.suggestions || []);
+      } else {
+        setSuggestions([]); // Ensure they are hidden if the result is valid
       }
 
-      // 2. SAVE TO HISTORY DATABASE
       const storedUser = JSON.parse(localStorage.getItem("user"));
       const userId = user?._id || storedUser?._id;
 
-      // Only save to history if user is logged in AND the course is valid
       if (userId && res.isValid) {
         try {
           await fetch(`${process.env.REACT_APP_API_URL}/api/history`, {
@@ -45,7 +45,6 @@ export default function CourseForm({ user }) {
               searchQuery: targetCourse
             }),
           });
-          console.log("✅ History saved");
         } catch (historyErr) {
           console.error("❌ History save failed:", historyErr);
         }
@@ -131,7 +130,8 @@ export default function CourseForm({ user }) {
       useFlexGap 
       sx={{ p: 1 }}
     >
-      {suggestions.map((item, index) => (
+      {suggestions.length > 0 && !result.isValid && ( 
+  <Box sx={{ mt: 3 }}>
         <Chip 
           key={index} 
           label={item}
@@ -150,7 +150,9 @@ export default function CourseForm({ user }) {
             }
           }} 
         />
-      ))}
+      </Box>
+)}
+      
     </Stack>
   </Box>
 )}

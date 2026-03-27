@@ -146,7 +146,7 @@ export const calculatePasswordStrength = (password) => {
   if (/[a-z]/.test(password)) strength += 0.5;
   if (/[A-Z]/.test(password)) strength += 0.5;
   if (/\d/.test(password)) strength += 0.5;
-  if (/[!@#$%^&*()_\-+=\[\]{};:'",.<>?/\\|`~]/.test(password)) strength += 1;
+  if (/[!@#$%^&*()_\-+=[\]{};:'",.<>?/\\|`~]/.test(password)) strength += 1;
 
   return Math.min(4, Math.floor(strength));
 };

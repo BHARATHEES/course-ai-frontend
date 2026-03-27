@@ -85,15 +85,6 @@ export default function RoadmapPage() {
   const [error, setError] = useState("");
   const [expandedPhase, setExpandedPhase] = useState(0);
 
-  useEffect(() => {
-    if (!courseName) {
-      setError("No course selected. Please go back and select a favorite course.");
-      setLoading(false);
-      return;
-    }
-    fetchRoadmap();
-  }, [courseName, fetchRoadmap]);
-
   const fetchRoadmap = async () => {
     setLoading(true);
     setError("");
@@ -110,6 +101,15 @@ export default function RoadmapPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!courseName) {
+      setError("No course selected. Please go back and select a favorite course.");
+      setLoading(false);
+      return;
+    }
+    fetchRoadmap();
+  }, [courseName]);
 
   if (!courseName || (loading && !roadmap)) {
     return (

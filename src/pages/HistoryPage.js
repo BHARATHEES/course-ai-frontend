@@ -1,142 +1,175 @@
 import React, { useState, useEffect } from "react";
-import { Container, Paper, Typography, Box, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, Button, Stack } from "@mui/material";
-import HistoryIcon from '@mui/icons-material/History';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import { useNavigate } from "react-router-dom";
+import {
+  Container, Paper, Typography, Box, Divider,
+  List, ListItem, ListItemText, IconButton,
+  CircularProgress, Button, Stack, Dialog,
+  DialogContent, DialogTitle, Alert,
+} from "@mui/material";
+import HistoryIcon      from "@mui/icons-material/History";
+import ArrowBackIcon    from "@mui/icons-material/ArrowBack";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteSweepIcon  from "@mui/icons-material/DeleteSweep";
+import CloseIcon        from "@mui/icons-material/Close";
+import { useNavigate }  from "react-router-dom";
+import AnalysisResult   from "../components/AnalysisResult";
+import api              from "../services/api";
 
-export default function HistoryPage({ user }) {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function HistoryPage() {
+  const [history,  setHistory]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [msgType,  setMsgType]  = useState("");
+  const [msgText,  setMsgText]  = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const userId = user?._id || storedUser?._id;
+  useEffect(() => { fetchHistory(); }, []);
 
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
+  const fetchHistory = async () => {
+    setLoading(true);
+    const res = await api.getHistory();
+    if (!res.error) setHistory(res.data || []);
+    setLoading(false);
+  };
 
-      try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/history/${userId}`);
-        const data = await res.json();
-        if (res.ok) setHistory(data);
-      } catch (err) {
-        console.error("Failed to fetch history");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
-  }, [user]);
+  const flash = (type, text) => {
+    setMsgType(type); setMsgText(text);
+    setTimeout(() => setMsgText(""), 3000);
+  };
 
-  const handleDelete = async (historyId) => {
-    if (!window.confirm("Remove this item from your history?")) return;
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/history/${historyId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setHistory(prev => prev.filter(item => item._id !== historyId));
-      }
-    } catch (err) {
-      console.error("Delete failed");
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Remove this item?")) return;
+    const res = await api.deleteHistoryItem(id);
+    if (!res.error) setHistory((h) => h.filter((x) => x._id !== id));
+    else flash("error", res.error);
   };
 
   const handleClearAll = async () => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const userId = user?._id || storedUser?._id;
-    if (!window.confirm("Clear entire search history? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/history/all/${userId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) setHistory([]);
-    } catch (err) {
-      console.error("Clear all failed", err);
-    }
+    if (!window.confirm("Clear all history? This cannot be undone.")) return;
+    const res = await api.deleteAllHistory();
+    if (!res.error) { setHistory([]); flash("success", "History cleared."); }
+    else flash("error", res.error);
   };
 
-  const formatHistoryTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    if (isToday) return `Today, ${timeStr}`;
-    if (isYesterday) return `Yesterday, ${timeStr}`;
-    return `${date.toLocaleDateString('en-GB')} • ${timeStr}`;
+  const fmt = (ds) => {
+    const d = new Date(ds), now = new Date();
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === now.toDateString()) return `Today, ${time}`;
+    const yest = new Date(); yest.setDate(now.getDate() - 1);
+    if (d.toDateString() === yest.toDateString()) return `Yesterday, ${time}`;
+    return `${d.toLocaleDateString("en-GB")} · ${time}`;
   };
 
   if (loading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
-      <CircularProgress size={30} thickness={5} />
+    <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+      <CircularProgress size={30} />
     </Box>
   );
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+      {/* Header */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <IconButton onClick={() => navigate(-1)} size="small" sx={{ bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <IconButton size="small" onClick={() => navigate(-1)}
+            sx={{ bgcolor: "var(--theme-bg-secondary)", border: "1px solid var(--theme-border-primary)" }}>
             <ArrowBackIcon fontSize="small" />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>History</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--theme-text-primary)" }}>
+            History
+          </Typography>
         </Stack>
-
         {history.length > 0 && (
-          <Button
-            size="small"
-            color="error"
-            startIcon={<DeleteSweepIcon sx={{ fontSize: 18 }} />}
-            onClick={handleClearAll}
-            sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem' }}
-          >
+          <Button size="small" color="error"
+            startIcon={<DeleteSweepIcon />} onClick={handleClearAll}
+            sx={{ textTransform: "none", fontWeight: 700 }}>
             Clear All
           </Button>
         )}
       </Box>
 
-      <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+      {msgText && <Alert severity={msgType || "info"} sx={{ mb: 2 }}>{msgText}</Alert>}
+
+      <Paper elevation={0} sx={{
+        border: "1px solid var(--theme-border-primary)",
+        borderRadius: 3, overflow: "hidden",
+        bgcolor: "var(--theme-surface-card)",
+      }}>
         {history.length > 0 ? (
           <List disablePadding>
-            {history.map((item, index) => (
+            {history.map((item, idx) => (
               <React.Fragment key={item._id}>
                 <ListItem
-                  sx={{ py: 1.5, px: 2.5, '&:hover': { bgcolor: '#f8fafc' } }}
+                  onClick={() => item.analysisResult && setSelected(item)}
+                  sx={{
+                    py: 1.5, px: 2.5,
+                    cursor: item.analysisResult ? "pointer" : "default",
+                    "&:hover": { bgcolor: "var(--theme-bg-secondary)" },
+                  }}
                   secondaryAction={
-                    <IconButton edge="end" size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#cbd5e1', '&:hover': { color: '#ef4444' } }}>
+                    <IconButton edge="end" size="small"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
+                      sx={{ color: "var(--theme-text-tertiary)", "&:hover": { color: "var(--theme-status-error)" } }}>
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
                   }
                 >
-                  <HistoryIcon sx={{ mr: 2, color: '#94a3b8', fontSize: 20 }} />
+                  <HistoryIcon sx={{ mr: 2, color: "var(--theme-text-secondary)", fontSize: 20 }} />
                   <ListItemText
-                    primary={item.searchQuery}
-                    primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155' }}
-                    secondary={formatHistoryTime(item.timestamp)}
-                    secondaryTypographyProps={{ fontSize: '0.75rem', color: '#94a3b8' }}
+                    primary={item.courseName}
+                    primaryTypographyProps={{ fontWeight: 600, color: "var(--theme-text-primary)" }}
+                    secondary={
+                      <>
+                        <span style={{ fontSize: "0.75rem", color: "var(--theme-text-tertiary)" }}>
+                          {fmt(item.createdAt)}
+                        </span>
+                        {item.analysisResult && (
+                          <span style={{ display: "block", fontSize: "0.7rem", color: "var(--theme-accent-primary)" }}>
+                            ✓ Analysis saved — click to view
+                          </span>
+                        )}
+                      </>
+                    }
                   />
                 </ListItem>
-                {index < history.length - 1 && <Divider />}
+                {idx < history.length - 1 && <Divider />}
               </React.Fragment>
             ))}
           </List>
         ) : (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>No searches found</Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8' }}>Analyze a course to see it here.</Typography>
+          <Box sx={{ p: 6, textAlign: "center" }}>
+            <Typography variant="body2" sx={{ color: "var(--theme-text-secondary)", fontWeight: 600 }}>
+              No history yet
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--theme-text-tertiary)" }}>
+              Analyse a course to see it here.
+            </Typography>
           </Box>
         )}
       </Paper>
+
+      {/* Detail modal */}
+      <Dialog open={Boolean(selected)} onClose={() => setSelected(null)}
+        fullWidth maxWidth="md"
+        PaperProps={{ sx: { borderRadius: 3, maxHeight: "90vh", bgcolor: "var(--theme-surface-card)" } }}>
+        {selected && (
+          <>
+            <DialogTitle sx={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              borderBottom: "1px solid var(--theme-border-primary)",
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--theme-text-primary)" }}>
+                {selected.courseName}
+              </Typography>
+              <IconButton size="small" onClick={() => setSelected(null)}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 3 }}>
+              <AnalysisResult data={selected.analysisResult} courseName={selected.courseName} />
+            </DialogContent>
+          </>
+        )}
+      </Dialog>
     </Container>
   );
 }

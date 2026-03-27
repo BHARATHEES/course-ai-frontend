@@ -1,214 +1,148 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Container, Paper, TextField, Button, Typography, Divider, Box, Alert, Stack } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-
-console.log("API URL:", process.env.REACT_APP_API_URL);
+import {
+  Container, Paper, Typography, Box, TextField,
+  Button, Divider, Alert, Stack,
+} from "@mui/material";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { useNavigate }  from "react-router-dom";
+import api              from "../services/api";
+import { validateLoginFields, validateSetPasswordFields } from "../utils/validation";
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate();
-  
-  // Form States
-  const [identifier, setIdentifier] = useState(""); 
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");     
-  const [newPassword, setNewPassword] = useState("");
-  
-  // Flow States
-  const [step, setStep] = useState("LOGIN"); 
-  const [tempUser, setTempUser] = useState(null);
+
+  // shared
   const [error, setError] = useState("");
 
-  const handleCallbackResponse = useCallback(async (response) => {
-    setError("");
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/google-auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: response.credential }),
-      });
+  // login step
+  const [identifier, setIdentifier] = useState("");
+  const [password,   setPassword]   = useState("");
 
-      const data = await res.json();
-      
-      if (res.ok) {
-        if (data.needsPassword) {
-          setTempUser(data);
-          setUsername(data.username); 
-          setStep("SET_PROFILE");
-        } else {
-          localStorage.setItem("user", JSON.stringify(data));
-          onLogin(data);
-          navigate("/");
-        }
-      } else {
-        setError(data.message || "Google Authentication failed");
-      }
-    } catch (err) {
-      setError("Could not connect to the server.");
+  // set-profile step (Google OAuth)
+  const [step,       setStep]       = useState("LOGIN"); // "LOGIN" | "SET_PROFILE"
+  const [tempUser,   setTempUser]   = useState(null);
+  const [username,   setUsername]   = useState("");
+  const [newPass,    setNewPass]    = useState("");
+
+  // ── Google callback ────────────────────────────────────────────────────────
+  const handleGoogle = useCallback(async (response) => {
+    setError("");
+    const res = await api.googleLogin(response.credential);
+    if (res.error) { setError(res.error); return; }
+    if (res.needsPassword) {
+      setTempUser(res);
+      setUsername(res.username || "");
+      setStep("SET_PROFILE");
+    } else {
+      onLogin(res);
+      navigate("/");
     }
   }, [onLogin, navigate]);
 
-  const handleFinalizeAccount = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/set-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: tempUser.email, 
-          username: username, 
-          password: newPassword 
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem("user", JSON.stringify(data));
-        onLogin(data);
-        navigate("/");
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError("Error finalizing account.");
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem("user", JSON.stringify(data));
-        onLogin(data);
-        navigate("/");
-      } else {
-        setError(data.message);
-      }
-    }
-    catch (err) { setError("Server error or backend not running"); }
-  };
-
   useEffect(() => {
-    /* global google */
     if (window.google) {
-      google.accounts.id.initialize({
+      window.google.accounts.id.initialize({
         client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
-        callback: handleCallbackResponse,
+        callback: handleGoogle,
       });
-
-      google.accounts.id.renderButton(
+      window.google.accounts.id.renderButton(
         document.getElementById("googleSignIn"),
         { theme: "outline", size: "large", width: "100%" }
       );
     }
-  }, [handleCallbackResponse]);
+  }, [handleGoogle]);
+
+  // ── Standard login ─────────────────────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    const v = validateLoginFields(identifier, password);
+    if (!v.valid) { setError(Object.values(v.errors)[0]); return; }
+
+    const res = await api.login(identifier, password);
+    if (res.error) { setError(res.error); return; }
+    onLogin(res);
+    navigate("/");
+  };
+
+  // ── Finalize Google account ────────────────────────────────────────────────
+  const handleFinalize = async (e) => {
+    e.preventDefault();
+    setError("");
+    const v = validateSetPasswordFields(username, newPass);
+    if (!v.valid) { setError(Object.values(v.errors)[0]); return; }
+
+    const res = await api.setPassword(tempUser.email, username, newPass);
+    if (res.error) { setError(res.error); return; }
+    onLogin(res);
+    navigate("/");
+  };
+
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      color: "var(--theme-text-primary)",
+      "& fieldset":         { borderColor: "var(--theme-border-primary)" },
+      "&:hover fieldset":   { borderColor: "var(--theme-accent-primary)" },
+      "&.Mui-focused fieldset": { borderColor: "var(--theme-accent-primary)" },
+    },
+    "& label": { color: "var(--theme-text-secondary)", "&.Mui-focused": { color: "var(--theme-accent-primary)" } },
+  };
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 10, mb: 4 }}>
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 4, 
-          border: '1px solid #e2e8f0', 
-          borderRadius: 4,
-          bgcolor: '#ffffff'
-        }}
-      >
+    <Container maxWidth="xs" sx={{ mt: 8, mb: 4 }}>
+      <Paper elevation={0} sx={{
+        p: 3, border: "1px solid var(--theme-border-primary)",
+        borderRadius: "12px", bgcolor: "var(--theme-surface-card)",
+      }}>
         <Stack alignItems="center" spacing={1} sx={{ mb: 3 }}>
-          <Box sx={{ bgcolor: '#f1f5f9', p: 1, borderRadius: 2 }}>
-            <LockOutlinedIcon sx={{ color: '#6366f1' }} />
+          <Box sx={{ bgcolor: "rgba(59,130,246,0.15)", p: 1, borderRadius: "8px" }}>
+            <LockOutlinedIcon sx={{ color: "var(--theme-accent-primary)" }} />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>
-            {step === "LOGIN" ? "Login In" : "Complete Profile"}
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--theme-text-primary)" }}>
+            {step === "LOGIN" ? "Sign In" : "Complete Profile"}
           </Typography>
         </Stack>
-        
-        {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem', py: 0 }}>{error}</Alert>}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: "0.85rem" }}>{error}</Alert>
+        )}
 
         {step === "LOGIN" ? (
           <>
             <form onSubmit={handleSubmit}>
-              <TextField 
-                fullWidth 
-                label="Username or Email"
-                size="small"
-                margin="dense" 
-                required 
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                sx={{ '& label': { fontSize: '0.9rem' } }}
-              />
-              <TextField 
-                fullWidth 
-                label="Password" 
-                type="password" 
-                size="small"
-                margin="dense" 
-                required 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                sx={{ '& label': { fontSize: '0.9rem' } }}
-              />
-              <Button 
-                fullWidth 
-                variant="contained" 
-                type="submit" 
-                sx={{ mt: 2, bgcolor: '#4f46e5', textTransform: 'none', fontWeight: 700, py: 1 }}
-              >
+              <TextField fullWidth label="Username or Email" size="small" margin="dense"
+                value={identifier} onChange={(e) => setIdentifier(e.target.value)} sx={inputSx} />
+              <TextField fullWidth label="Password" type="password" size="small" margin="dense"
+                value={password} onChange={(e) => setPassword(e.target.value)} sx={inputSx} />
+              <Button fullWidth variant="contained" type="submit" sx={{
+                mt: 2, py: 1.2, bgcolor: "var(--theme-accent-primary)",
+                "&:hover": { bgcolor: "var(--theme-accent-secondary)" },
+                textTransform: "none", fontWeight: 700,
+              }}>
                 Continue
               </Button>
             </form>
-            <Box sx={{ my: 3 }}>
-              <Divider sx={{ '& span': { fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 } }}>
-                OR
-              </Divider>
-            </Box>
-            <div id="googleSignIn" style={{ width: '100%' }}></div>
+            <Divider sx={{ my: 3, "& span": { color: "var(--theme-text-tertiary)", fontSize: "0.8rem" } }}>
+              OR
+            </Divider>
+            <div id="googleSignIn" style={{ width: "100%" }} />
           </>
         ) : (
           <>
-            <Typography variant="caption" sx={{ color: '#64748b', mb: 2, display: 'block', textAlign: 'center' }}>
-              Finalize credentials for <b>{tempUser?.email}</b>
+            <Typography variant="body2" sx={{ color: "var(--theme-text-secondary)", mb: 2, textAlign: "center" }}>
+              Set credentials for <strong style={{ color: "var(--theme-text-primary)" }}>{tempUser?.email}</strong>
             </Typography>
-
-            <form onSubmit={handleFinalizeAccount}>
-              <TextField 
-                fullWidth 
-                label="Username" 
-                size="small"
-                margin="dense" 
-                required 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))} 
-                helperText="Permanent unique identifier"
-                FormHelperTextProps={{ sx: { fontSize: '0.65rem' } }}
-              />
-              <TextField 
-                fullWidth 
-                label="Set Password" 
-                type="password" 
-                size="small"
-                margin="dense" 
-                required 
-                value={newPassword} 
-                onChange={(e) => setNewPassword(e.target.value)} 
-              />
-              <Button 
-                fullWidth 
-                variant="contained" 
-                type="submit" 
-                sx={{ mt: 2, py: 1, bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' }, textTransform: 'none', fontWeight: 700 }}
-              >
+            <form onSubmit={handleFinalize}>
+              <TextField fullWidth label="Username" size="small" margin="dense"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                helperText="Permanent unique identifier" sx={inputSx} />
+              <TextField fullWidth label="Set Password" type="password" size="small" margin="dense"
+                value={newPass} onChange={(e) => setNewPass(e.target.value)} sx={inputSx} />
+              <Button fullWidth variant="contained" type="submit" sx={{
+                mt: 2, py: 1.2, bgcolor: "var(--theme-status-success)",
+                "&:hover": { opacity: 0.85 }, textTransform: "none", fontWeight: 700,
+              }}>
                 Create Account
               </Button>
             </form>

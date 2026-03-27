@@ -1,155 +1,162 @@
-import React, { useState } from "react";
-import { TextField, Button, Card, CardContent, Typography, CircularProgress, Chip, Box, Alert, Stack } from "@mui/material";
-import api from "../services/api";
-import AnalysisResult from "./AnalysisResult";
+import React, { useState, useEffect } from "react";
+import {
+  TextField, Button, Card, CardContent,
+  Typography, CircularProgress, Chip, Box, Alert, Stack,
+} from "@mui/material";
+import { styled }          from "@mui/material/styles";
+import SearchIcon          from "@mui/icons-material/Search";
+import api                 from "../services/api";
+import { validateCourseName } from "../utils/validation";
+import AnalysisDashboard   from "./AnalysisDashboard";
 
-export default function CourseForm({ user }) {
-  const [course, setCourse] = useState("");
-  const [result, setResult] = useState("");
+const SubmitButton = styled(Button)({
+  background:    "linear-gradient(135deg, var(--theme-accent-primary) 0%, var(--theme-accent-secondary) 100%)",
+  color:         "white",
+  fontWeight:    "var(--font-weight-semibold)",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+  padding:       "14px 36px",
+  borderRadius:  "var(--radius-lg)",
+  fontSize:      "0.95rem",
+  transition:    "all var(--transition-base)",
+  boxShadow:     "var(--theme-shadow-md)",
+  "&:hover":     { 
+    background: "linear-gradient(135deg, var(--theme-accent-secondary) 0%, var(--theme-accent-hover) 100%)",
+    transform: "translateY(-3px)",
+    boxShadow: "var(--theme-shadow-lg)",
+  },
+  "&:active": { transform: "translateY(-1px)" },
+  "&:disabled":  { 
+    background: "rgba(59,130,246,0.4)", 
+    color: "rgba(255,255,255,0.7)",
+    boxShadow: "none",
+  },
+});
+
+const StyledInput = styled(TextField)({
+  "& .MuiOutlinedInput-root": {
+    background: "var(--theme-bg-secondary)",
+    borderRadius: "var(--radius-md)",
+    transition: "all var(--transition-base)",
+    "& fieldset":         { borderColor: "var(--theme-border-primary)", transition: "all var(--transition-base)" },
+    "&:hover fieldset":   { borderColor: "var(--theme-accent-tertiary)" },
+    "&.Mui-focused fieldset": {
+      borderColor: "var(--theme-accent-primary)",
+      boxShadow:   "0 0 0 4px rgba(59,130,246,0.1)",
+    },
+  },
+  "& .MuiInputLabel-root":   { 
+    color: "var(--theme-text-tertiary)", 
+    fontWeight: "var(--font-weight-medium)",
+    "&.Mui-focused": { color: "var(--theme-accent-primary)" } 
+  },
+  "& .MuiOutlinedInput-input": { 
+    color: "var(--theme-text-primary)",
+    fontSize: "1rem",
+    fontWeight: "var(--font-weight-regular)",
+  },
+  "& .MuiOutlinedInput-input::placeholder": {
+    color: "var(--theme-text-tertiary)",
+    opacity: 0.7,
+  },
+});
+
+export default function CourseForm({ initialCourse = "" }) {
+  const [course,    setCourse]    = useState(initialCourse);
+  const [result,    setResult]    = useState(null);
+  const [submitted, setSubmitted] = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submittedCourse, setSubmittedCourse] = useState("");
 
-  const handleSubmit = async (selectedCourse = null) => {
-    const targetCourse = selectedCourse || course;
-    if (!targetCourse) return;
+  // Auto-run when URL param is set
+  useEffect(() => {
+    if (initialCourse?.trim()) runAnalysis(initialCourse.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCourse]);
 
-    setLoading(true);
-    setResult("");
-    setSuggestions([]); // Clear previous suggestions
-    setSubmittedCourse(targetCourse);
+  const runAnalysis = async (name) => {
+    const v = validateCourseName(name);
+    if (!v.valid) { setError(v.error); return; }
 
-    try {
-      const res = await api.analyzeCourse(targetCourse);
+    setError(""); setLoading(true); setResult(null);
+    setSuggestions([]); setSubmitted(name);
 
-      // ✅ Set the whole result
-      setResult(res);
+    const res = await api.analyzeCourse(v.sanitized);
+    setLoading(false);
 
-      // ✅ Update the state suggestions if the course isn't valid
-      if (!res.isValid) {
-        setSuggestions(res.suggestions || []);
-      } else {
-        setSuggestions([]); // Ensure they are hidden if the result is valid
-      }
-
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const userId = user?._id || storedUser?._id;
-
-      if (userId && res.isValid) {
-        try {
-          await fetch(`${process.env.REACT_APP_API_URL}/api/history`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: userId,
-              searchQuery: targetCourse
-            }),
-          });
-        } catch (historyErr) {
-          console.error("❌ History save failed:", historyErr);
-        }
-      }
-
-    } catch (err) {
-      console.error("General Analysis Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClear = () => {
-    setCourse("");
-    setResult("");
-    setSuggestions([]);
-    setSubmittedCourse("");
-  };
-
-  const handleSelectSuggestion = (suggestedName) => {
-    setCourse(suggestedName);
-    handleSubmit(suggestedName);
+    if (res.error) { setError(res.error); return; }
+    setResult(res);
+    if (!res.isValid) setSuggestions(res.suggestions || []);
   };
 
   return (
     <Box>
-      <Card elevation={2}>
-        <CardContent>
-          <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>Analyze a Course</Typography>
-          <TextField
+      <Card elevation={0} sx={{ background: "transparent", border: "none" }}>
+        <CardContent sx={{ p: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "var(--radius-md)",
+              background: "linear-gradient(135deg, var(--theme-accent-primary) 0%, var(--theme-accent-secondary) 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <SearchIcon sx={{ color: "white", fontSize: 22 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: "var(--font-weight-bold)", color: "var(--theme-text-primary)" }}>
+                Analyze a Course
+              </Typography>
+              <Typography variant="caption" sx={{ color: "var(--theme-text-tertiary)" }}>
+                Get AI-powered insights instantly
+              </Typography>
+            </Box>
+          </Box>
+
+          <StyledInput
             fullWidth
-            label="Enter Course Name (e.g. Data Science)"
-            variant="outlined"
+            label="Course Name"
+            placeholder="e.g. Machine Learning, React, AWS, Python"
             value={course}
-            onChange={(e) => setCourse(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+            onChange={(e) => { setCourse(e.target.value); setError(""); }}
+            onKeyDown={(e) => e.key === "Enter" && !loading && runAnalysis(course)}
+            error={!!error}
+            helperText={error}
+            sx={{ mb: 2.5 }}
+            size="medium"
           />
 
-          <Stack direction="row" spacing={2} sx={{ mt: 3, width: "100%" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              size="large"
-              sx={{ py: 1.5, fontWeight: 'bold', textTransform: 'none' }}
-              onClick={() => handleSubmit()}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Generate Analysis"}
-            </Button>
-
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              sx={{
-                py: 1.5,
-                fontWeight: 'bold',
-                textTransform: 'none',
-                bgcolor: '#f72e2e',
-                color: '#fff',
-                '&:hover': { bgcolor: '#d81e31' }
-              }}
-              onClick={handleClear}
-            >
-              Clear
-            </Button>
-          </Stack>
+          <SubmitButton 
+            fullWidth 
+            onClick={() => runAnalysis(course)} 
+            disabled={loading || !course.trim()}
+          >
+            {loading
+              ? <><CircularProgress size={18} sx={{ color: "white", mr: 1 }} /> Analyzing…</>
+              : "Analyze Now"}
+          </SubmitButton>
 
           {suggestions.length > 0 && (
             <Box sx={{ mt: 3 }}>
-              <Alert
-                severity="warning"
-                sx={{ borderRadius: 2, fontWeight: 500, mb: 2 }}
+              <Alert 
+                severity="warning" 
+                sx={{ 
+                  mb: 2, 
+                  borderRadius: "var(--radius-lg)",
+                  backgroundColor: "rgba(245, 158, 11, 0.1)",
+                  borderColor: "var(--theme-status-warning)",
+                  "& .MuiAlert-message": { fontWeight: "var(--font-weight-medium)" }
+                }}
               >
-                Course not clearly recognized. Did you mean one of these?
+                No exact match found — did you mean one of these?
               </Alert>
-
-              <Stack
-                direction="row"
-                spacing={1}
-                flexWrap="wrap"
-                useFlexGap
-                sx={{ p: 1 }}
-              >
-                {/* 🟢 FIX: Ensure (item, index) are inside the map arguments */}
-                {suggestions.map((item, index) => (
-                  <Chip
-                    key={index}
-                    label={item}
-                    onClick={() => handleSelectSuggestion(item)}
-                    sx={{
-                      mb: 1,
-                      bgcolor: '#fff7ed',
-                      color: '#9a3412',
-                      fontWeight: 600,
-                      border: '1px solid #fed7aa',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        bgcolor: '#ffedd5',
-                        transform: 'translateY(-2px)',
-                        transition: 'all 0.2s'
-                      }
-                    }}
-                  />
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {suggestions.map((s, i) => (
+                  <Chip key={i} label={s} onClick={() => { setCourse(s); runAnalysis(s); }}
+                    sx={{ mb: 1, bgcolor: "var(--theme-accent-primary)", color: "white", fontWeight: 700, cursor: "pointer" }} />
                 ))}
               </Stack>
             </Box>
@@ -157,7 +164,9 @@ export default function CourseForm({ user }) {
         </CardContent>
       </Card>
 
-      {result && <AnalysisResult data={result} courseName={submittedCourse} />}
+      {(result || loading) && (
+        <AnalysisDashboard data={result} courseName={submitted} isLoading={loading} />
+      )}
     </Box>
   );
 }

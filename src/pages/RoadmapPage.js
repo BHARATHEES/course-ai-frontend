@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Paper,
@@ -85,7 +85,7 @@ export default function RoadmapPage() {
   const [error, setError] = useState("");
   const [expandedPhase, setExpandedPhase] = useState(0);
 
-  const fetchRoadmap = async () => {
+  const fetchRoadmap = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -100,7 +100,7 @@ export default function RoadmapPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseName]);
 
   useEffect(() => {
     if (!courseName) {
@@ -109,7 +109,7 @@ export default function RoadmapPage() {
       return;
     }
     fetchRoadmap();
-  }, [courseName]);
+  }, [courseName, fetchRoadmap]);
 
   if (!courseName || (loading && !roadmap)) {
     return (

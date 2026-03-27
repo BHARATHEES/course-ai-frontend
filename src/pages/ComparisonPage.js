@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Container, Paper, Typography, Box, Button, Stack,
   TextField, Chip, Alert, CircularProgress, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead,
+  Table, TableBody, TableCell, TableHead,
   TableRow, Tabs, Tab, IconButton,
 } from "@mui/material";
 import { styled }           from "@mui/material/styles";
@@ -377,7 +377,6 @@ export default function ComparisonPage() {
                 {ranking.map((item) => {
                   const fullData = item.data?.fullData;
                   const comparisonData = fullData?.comparison?.courses?.[item.name.toLowerCase()];
-                  const insights = fullData?.insights?.[item.name.toLowerCase()];
                   
                   return (
                     <Grid item xs={12} key={item.name}>

@@ -18,12 +18,6 @@ import UserDashboard    from "./pages/UserDashboard";
 import MarketInsightsPage from "./pages/MarketInsightsPage";
 import RoadmapPage      from "./pages/RoadmapPage";
 
-// ─── Route guard ─────────────────────────────────────────────────────────────
-const PrivateRoute = ({ element }) => {
-  const user = localStorage.getItem("user");
-  return user ? element : <Navigate to="/login" replace />;
-};
-
 // ─── App ─────────────────────────────────────────────────────────────────────
 function AppContent() {
   const [user, setUser] = useState(null);

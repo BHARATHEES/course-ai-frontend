@@ -245,7 +245,7 @@ export const calculateGrowthPercentage = (entry = 0, senior = 0) => {
   return Math.round(((senior - entry) / entry) * 100);
 };
 
-export default {
+const analysisTransformUtils = {
   transformAnalysisData,
   getDefaultAnalysis,
   normalizeScore,
@@ -259,3 +259,5 @@ export default {
   formatSalary,
   calculateGrowthPercentage,
 };
+
+export default analysisTransformUtils;

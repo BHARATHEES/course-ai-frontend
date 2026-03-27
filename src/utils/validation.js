@@ -21,7 +21,7 @@ export const validateCourseName = (courseName) => {
     return { valid: false, error: "Course name must be 200 characters or less" };
   }
 
-  const allowedPattern = /^[a-zA-Z0-9\s\+\-\/\#\.\&\(\)]*$/;
+  const allowedPattern = /^[a-zA-Z0-9\s+\-/#.&()]*$/;
   if (!allowedPattern.test(name)) {
     return {
       valid: false,

@@ -53,17 +53,7 @@ const GradientBtn = styled(Button)({
   },
 });
 
-const PhaseCard = styled(Card)({
-  background: "var(--theme-surface-card)",
-  border: "2px solid var(--theme-accent-primary)",
-  borderRadius: "12px",
-  marginTop: "16px",
-  transition: "all 0.3s",
-  "&:hover": {
-    boxShadow: "0 8px 24px rgba(59, 130, 246, 0.2)",
-    transform: "translateY(-4px)",
-  },
-});
+
 
 const MilestoneItem = styled(Box)({
   padding: "16px",
@@ -102,7 +92,7 @@ export default function RoadmapPage() {
       return;
     }
     fetchRoadmap();
-  }, [courseName]);
+  }, [courseName, fetchRoadmap]);
 
   const fetchRoadmap = async () => {
     setLoading(true);
